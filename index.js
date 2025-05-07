@@ -49,11 +49,35 @@ bot.onText(/\/start/, async (msg) => {
     });
   }
 
-  bot.sendMessage(
-    chatId,
-    `Salam, ${msg.from.first_name}! Elan bildiriş sistemi aktivdir. Filtrləri saytdan əlavə edin.`
-  );
-});
+  bot.onText(/\/start/, async (msg) => {
+    const chatId = msg.chat.id;
+  
+    const existingUser = await User.findOne({ telegramId: chatId });
+  
+    if (!existingUser) {
+      await User.create({
+        telegramId: chatId,
+        username: msg.from.username,
+        first_name: msg.from.first_name,
+        filters: [],
+      });
+    }
+  
+    bot.sendMessage(chatId, `Salam, ${msg.from.first_name}! Panelə keçmək üçün aşağıdakı düyməni kliklə:`, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "🔍 Paneli Aç",
+              web_app: {
+                url: "https://elanbot-frontend.vercel.app/dashboard"
+              }
+            }
+          ]
+        ]
+      }
+    });
+  });
 
 app.get('/', (req, res) => {
   res.send('ElanBot backend is working.');
