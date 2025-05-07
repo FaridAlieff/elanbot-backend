@@ -19,7 +19,23 @@ const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 // /start komandası
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, 'Salam! ElanBot-a xoş gəldiniz.');
+
+  const webAppUrl = 'https://elanbot-frontend2.vercel.app';
+
+  bot.sendMessage(chatId, 'Salam! ElanBot-a xoş gəldiniz.', {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: '📋 Panelə keç',
+            web_app: {
+              url: webAppUrl,
+            },
+          },
+        ],
+      ],
+    },
+  });
 });
 
 // Express server
