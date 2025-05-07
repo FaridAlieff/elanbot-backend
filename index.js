@@ -1,94 +1,32 @@
-// ElanBot backend - Telegram Bot + Filter API (tam versiya)
-
-const express = require('express');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
-
+const TelegramBot = require('node-telegram-bot-api');
+const mongoose = require('mongoose');
+const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 5000;
-
-app.use(bodyParser.json());
+const port = process.env.PORT || 8080;
 
 // MongoDB bağlantısı
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-});
+})
+.then(() => console.log('MongoDB bağlantısı uğurludur'))
+.catch((err) => console.error('MongoDB bağlantı xətası:', err));
 
-const userSchema = new mongoose.Schema({
-  telegramId: String,
-  username: String,
-  first_name: String,
-  filters: [
-    {
-      title: String,
-      url: String,
-      active: Boolean,
-    },
-  ],
-});
-
-const User = mongoose.model('User', userSchema);
-
-// Telegram bot qurulması
+// Telegram botu
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
-bot.onText(/\/start/, async (msg) => {
+// /start komandası
+bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-
-  const existingUser = await User.findOne({ telegramId: chatId });
-
-  if (!existingUser) {
-    await User.create({
-      telegramId: chatId,
-      username: msg.from.username,
-      first_name: msg.from.first_name,
-      filters: [],
-    });
-  }
-
-  bot.sendMessage(chatId, `Salam, ${msg.from.first_name}! Panelə keçmək üçün aşağıdakı düyməni kliklə:`, {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "🔍 Paneli Aç",
-            web_app: {
-              url: "https://elanbot-frontend.vercel.app/dashboard"
-            }
-          }
-        ]
-      ]
-    }
-  });
+  bot.sendMessage(chatId, 'Salam! ElanBot-a xoş gəldiniz.');
 });
 
-// Status API
+// Express server
 app.get('/', (req, res) => {
-  res.send('ElanBot backend is working.');
+  res.send('ElanBot Backend işləyir.');
 });
 
-// Yeni filter əlavə etmək üçün API
-app.post('/api/add-filter', async (req, res) => {
-  const { telegramId, title, url } = req.body;
-  const user = await User.findOne({ telegramId });
-
-  if (!user) return res.status(404).json({ message: 'User not found' });
-
-  user.filters.push({ title, url, active: true });
-  await user.save();
-  res.json({ message: 'Filter added' });
-});
-
-// Mövcud filtrləri göstərmək üçün API
-app.get('/api/filters/:telegramId', async (req, res) => {
-  const user = await User.findOne({ telegramId: req.params.telegramId });
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  res.json(user.filters);
-});
-
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server port ${port}-da işləyir`);
 });
