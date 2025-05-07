@@ -1,5 +1,4 @@
-// Bu fayl "elanbot-template" layihəsinin backend hissəsi ucun Express server quruluşudur
-// Telegram bot, istifadəçi qeydiyyatı və sadə API burada olacaq
+// ElanBot backend - Telegram Bot + Filter API (tam versiya)
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -38,6 +37,7 @@ const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
+
   const existingUser = await User.findOne({ telegramId: chatId });
 
   if (!existingUser) {
@@ -49,36 +49,23 @@ bot.onText(/\/start/, async (msg) => {
     });
   }
 
-  bot.onText(/\/start/, async (msg) => {
-    const chatId = msg.chat.id;
-  
-    const existingUser = await User.findOne({ telegramId: chatId });
-  
-    if (!existingUser) {
-      await User.create({
-        telegramId: chatId,
-        username: msg.from.username,
-        first_name: msg.from.first_name,
-        filters: [],
-      });
-    }
-  
-    bot.sendMessage(chatId, `Salam, ${msg.from.first_name}! Panelə keçmək üçün aşağıdakı düyməni kliklə:`, {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "🔍 Paneli Aç",
-              web_app: {
-                url: "https://elanbot-frontend.vercel.app/dashboard"
-              }
+  bot.sendMessage(chatId, `Salam, ${msg.from.first_name}! Panelə keçmək üçün aşağıdakı düyməni kliklə:`, {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "🔍 Paneli Aç",
+            web_app: {
+              url: "https://elanbot-frontend.vercel.app/dashboard"
             }
-          ]
+          }
         ]
-      }
-    });
+      ]
+    }
   });
+});
 
+// Status API
 app.get('/', (req, res) => {
   res.send('ElanBot backend is working.');
 });
@@ -93,6 +80,13 @@ app.post('/api/add-filter', async (req, res) => {
   user.filters.push({ title, url, active: true });
   await user.save();
   res.json({ message: 'Filter added' });
+});
+
+// Mövcud filtrləri göstərmək üçün API
+app.get('/api/filters/:telegramId', async (req, res) => {
+  const user = await User.findOne({ telegramId: req.params.telegramId });
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json(user.filters);
 });
 
 app.listen(PORT, () => {
